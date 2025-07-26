@@ -1,5 +1,4 @@
-[![GitHub Actions CI Status](https://github.com/genexpr/clinical_exercise/workflows/nf-core%20CI/badge.svg)](https://github.com/genexpr/clinical_exercise/actions?query=workflow%3A%22nf-core+CI%22)
-[![GitHub Actions Linting Status](https://github.com/genexpr/clinical_exercise/workflows/nf-core%20linting/badge.svg)](https://github.com/genexpr/clinical_exercise/actions?query=workflow%3A%22nf-core+linting%22)[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
+[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.XXXXXXX-1073c8?labelColor=000000)](https://doi.org/10.5281/zenodo.XXXXXXX)
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A523.04.0-23aa62.svg)](https://www.nextflow.io/)
 [![run with conda](http://img.shields.io/badge/run%20with-conda-3EB049?labelColor=000000&logo=anaconda)](https://docs.conda.io/en/latest/)
@@ -9,52 +8,69 @@
 
 ## Introduction
 
-**genexpr/clinical_exercise** is a bioinformatics pipeline that ...
+**genexpr/clinical_exercise** is a bioinformatics pipeline that identify biomarkers of interest associated to the effect of the drug
 
-<!-- TODO nf-core:
-   Complete this sentence with a 2-3 sentence summary of what types of data the pipeline ingests, a brief overview of the
-   major pipeline sections and the types of output it produces. You're giving an overview to someone new
-   to nf-core here, in 15-20 seconds. For an example, see https://github.com/nf-core/rnaseq/blob/master/README.md#introduction
--->
+!!! add flowchart here
 
-<!-- TODO nf-core: Include a figure that guides the user through the major workflow steps. Many nf-core
-     workflows use the "tube map" design for that. See https://nf-co.re/docs/contributing/design_guidelines#examples for examples.   -->
-<!-- TODO nf-core: Fill in short bullet-pointed list of the default steps in the pipeline -->
-
-1. Read QC ([`FastQC`](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/))
-2. Present QC for raw reads ([`MultiQC`](http://multiqc.info/))
+1. Data management 
+2. Biomarker expression analysis 
 
 ## Usage
 
 > [!NOTE]
 > If you are new to Nextflow and nf-core, please refer to [this page](https://nf-co.re/docs/usage/installation) on how to set-up Nextflow. Make sure to [test your setup](https://nf-co.re/docs/usage/introduction#how-to-run-a-pipeline) with `-profile test` before running the workflow on actual data.
 
-<!-- TODO nf-core: Describe the minimum required steps to execute the pipeline, e.g. how to prepare samplesheets.
-     Explain what rows and columns represent. For instance (please edit as appropriate):
-
-First, prepare a samplesheet with your input data that looks as follows:
-
-`samplesheet.csv`:
-
-```csv
-sample,fastq_1,fastq_2
-CONTROL_REP1,AEG588A1_S1_L002_R1_001.fastq.gz,AEG588A1_S1_L002_R2_001.fastq.gz
+1. Clone this git repo 
+```bash
+git clone https://github.com/jdchambrier/genexpr-clinical_exercise.git
 ```
 
-Each row represents a fastq file (single-end) or a pair of fastq files (paired end).
+2. Set up a conda env to be able to run nextflow (if applicable). 
+```bash
+cd genexpr-clinical_exercise
+conda env create -f environment.yml
+conda activate nextflow-env 
+```
 
--->
+3. Prepare a your input data that looks as follows:
+
+`test_data.csv`:
+
+```csv
+USUBJID,TREATMENT,VISIT,GENDER,MARKER_TP53,MARKER_BRCA1,MARKER_EGFR
+1,DRUG,D0,MALE,2.5,5.2,3.8
+1,DRUG,D1,MALE,3.1,5.5,4
+1,DRUG,D2,MALE,NA,5.3,4.1
+2,PLACEBO,D0,FEMALE,1.8,4.9,3.5
+2,PLACEBO,D1,FEMALE,2,5,3.6
+2,PLACEBO,D2,FEMALE,2.1,5.2,3.7
+```   
+
+create a folder like test_data and store `test_data.csv` in test_data 
+```bash
+mkdir test_data
+```
+
+
+4. Build R docker that will be used within nextflow pipeline
+
+```bash
+cd docker # make sure you are in genexpr-clinical_exercise/docker
+docker build -t rpreprocess:0.1 -f Dockerfile ./
+```
 
 Now, you can run the pipeline using:
 
-<!-- TODO nf-core: update the following command to include all required parameters for a minimal example -->
-
 ```bash
-nextflow run genexpr/clinical_exercise \
-   -profile <docker/singularity/.../institute> \
-   --input samplesheet.csv \
-   --outdir <OUTDIR>
+cd ../   # make sure you are in genexpr-clinical_exercise
+nextflow run main.nf \
+   -profile docker \
+   --input <input full path> \   # e.g test_data/test_data.csv
+   --outdir <OUTDIR>  # e.g output
 ```
+
+
+
 
 > [!WARNING]
 > Please provide pipeline parameters via the CLI or Nextflow `-params-file` option. Custom config files including those provided by the `-c` Nextflow option can be used to provide any configuration _**except for parameters**_;
@@ -66,7 +82,7 @@ genexpr/clinical_exercise was originally written by Jing.
 
 We thank the following people for their extensive assistance in the development of this pipeline:
 
-<!-- TODO nf-core: If applicable, make list of people who have also contributed -->
+
 
 ## Contributions and Support
 
@@ -74,10 +90,6 @@ If you would like to contribute to this pipeline, please see the [contributing g
 
 ## Citations
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi and badge at the top of this file. -->
-<!-- If you use genexpr/clinical_exercise for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
-
-<!-- TODO nf-core: Add bibliography of tools and data used in your pipeline -->
 
 An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
 
