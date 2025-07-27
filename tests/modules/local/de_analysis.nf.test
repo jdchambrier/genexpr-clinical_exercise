@@ -1,0 +1,36 @@
+nextflow_process {
+
+    name "Test Process DE_ANALYSIS"
+    script "modules/local/de_analysis.nf"
+    process "DE_ANALYSIS"
+
+    test("Should run without failures") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/test_data/clean_clinical.csv")
+                input[1] = "MALE"
+                input[2] = file("${projectDir}/bin/de_analysis.Rmd")
+                container = 'rpreprocess:0.1'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            
+            with(process.out){
+                assert significance_results.size() == 1
+                assert snapshot(significance_results).match("significance_results")
+                assert d2_report.size() == 1
+                def lines = file(d2_report[0]).readLines()
+                assert snapshot(lines[0..10]).match("d2_report_10lines")
+                assert versions.size() == 1
+                assert snapshot(versions).match("versions")
+            }
+        }
+
+    }
+
+}

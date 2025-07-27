@@ -12,8 +12,10 @@
 
 !!! add flowchart here
 
-1. Data management 
-2. Biomarker expression analysis 
+1. Data management:  
+   involves loading the dataset, generating descriptive statistics, checking and removing rows with missing biomarker values, and preparing a clean analysis-ready dataset for variables such as TREATMENT, GENDER, and MARKER_TP53.
+2. Biomarker expression analysis:    
+   identifies biomarkers significantly affected by the drug by comparing expression levels at the D2 timepoint between treatment groups and visualizes the timecourse of significant markers.
 
 ## Usage
 
@@ -77,20 +79,27 @@ cd ../   # make sure you are in genexpr-clinical_exercise when finish this comma
 nextflow run main.nf \
    -profile docker \
    --input <input full path> \   # e.g test_data/test_data.csv
+   --gender MALE \    # e.g MALE or FEMALE
    --outdir <OUTDIR>  # e.g output
 ```
 
 5. Find outputs in ```--outdir``` indicated folder     
--- ```data_management``` subfolder for clean data after removing biomarkers containing missing values and a html report with descriptive statistics for TREATMENT, GENDER and MARKER_TP53
+-- ```data_management``` subfolder for clean data after removing biomarkers containing missing values and a html report with descriptive statistics for TREATMENT, GENDER and MARKER_TP53     
+-- ```de_analysis``` subfolder for significance result table and analysis report     
 
 
 
 ## For developers     
 
-To make sure individual process and pipeline is working as expected:    
+To make sure individual process and pipeline is working as expected (store [test_data.csv](https://github.com/user-attachments/files/21452788/test_data.csv) and [clean_clinical.csv](https://github.com/user-attachments/files/21455219/clean_clinical.csv) in test_data foler first):    
 #### -- run data_management process unit test
 ```bash
 nf-test test tests/modules/local/data_management.nf.test   --profile docker
+```
+
+#### -- run de_analysis process unit test
+```bash
+nf-test test tests/modules/local/de_analysis.nf.test   --profile docker
 ```
 
 #### -- run workflow integration test

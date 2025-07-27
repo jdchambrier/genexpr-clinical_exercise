@@ -10,6 +10,9 @@ nextflow_pipeline {
 
                 input = "${projectDir}/test_data/test_data.csv"
                 managementrmd = "${projectDir}/bin/management.Rmd"
+                dermd   = "${projectDir}/bin/de_analysis.Rmd"
+
+                gender  = 'MALE'
             }
         }
 
