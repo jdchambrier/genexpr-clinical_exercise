@@ -46,7 +46,7 @@ USUBJID,TREATMENT,VISIT,GENDER,MARKER_TP53,MARKER_BRCA1,MARKER_EGFR
 2,PLACEBO,D2,FEMALE,2.1,5.2,3.7
 ```   
 
-create a folder like test_data and store `test_data.csv` in test_data 
+create a folder like test_data and store [test_data.csv](https://github.com/user-attachments/files/21452788/test_data.csv) in test_data foler   
 ```bash
 mkdir test_data
 ```
@@ -59,10 +59,21 @@ cd docker # make sure you are in genexpr-clinical_exercise/docker
 docker build -t rpreprocess:0.1 -f Dockerfile ./
 ```
 
-Now, you can run the pipeline using:
+Now, you can run the pipeline using:      
+
+-- test pipeline using a prepared test data to try the pipeline       
 
 ```bash
-cd ../   # make sure you are in genexpr-clinical_exercise
+cd ../ 
+nextflow run main.nf \
+   -profile docker \
+   -c conf/test.config \
+   --outdir output
+```      
+        
+-- run pipeline with user defined input data     
+```bash
+cd ../   # make sure you are in genexpr-clinical_exercise when finish this command
 nextflow run main.nf \
    -profile docker \
    --input <input full path> \   # e.g test_data/test_data.csv
@@ -71,7 +82,32 @@ nextflow run main.nf \
 
 5. Find outputs in ```--outdir``` indicated folder     
 -- ```data_management``` subfolder for clean data after removing biomarkers containing missing values and a html report with descriptive statistics for TREATMENT, GENDER and MARKER_TP53
- 
+
+
+
+## For developers     
+
+To make sure individual process and pipeline is working as expected:    
+#### -- run data_management process unit test
+```bash
+nf-test test tests/modules/local/data_management.nf.test   --profile docker
+```
+
+#### -- run workflow integration test
+```bash
+nf-test test tests/workflows/clinical_exercise.nf.test   --profile docker
+```
+
+#### -- run pipeline integration test
+```bash
+nf-test test tests/main.nf.test   --profile docker
+```     
+
+You should expected the outcomes from unit test and integration tests:
+```bash
+ Test [xxxx] 'Should run without failures' PASSED
+SUCCESS: Executed 1 tests in xxxxs
+```
 
 
 
