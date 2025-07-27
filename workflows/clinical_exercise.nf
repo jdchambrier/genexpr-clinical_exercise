@@ -15,6 +15,8 @@ log.info logo + paramsSummaryLog(workflow) + citation
 
 WorkflowClinical_exercise.initialise(params, log)
 
+ch_input = file(params.input, checkIfExists: true)
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     CONFIG FILES
@@ -64,7 +66,7 @@ workflow CLINICALEXERCISE {
     ch_versions = Channel.empty()
 
     DATA_MANAGEMENT (
-        file(params.input),
+        ch_input,
         file(params.managementrmd)
     )
     ch_versions = ch_versions.mix(DATA_MANAGEMENT.out.versions)
