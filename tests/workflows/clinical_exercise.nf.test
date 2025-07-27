@@ -1,0 +1,29 @@
+nextflow_workflow {
+
+    name "Test Workflow CLINICALEXERCISE"
+    script "workflows/clinical_exercise.nf"
+    workflow "CLINICALEXERCISE"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+                
+                input = "${projectDir}/test_data/test_data.csv"
+                managementrmd = "${projectDir}/bin/management.Rmd"
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            with(workflow.out) {
+                //  nf-test for data management
+                assert clean_data.size() == 1
+                assert snapshot(clean_data).match("clean_data")
+            }
+        }
+
+    }
+
+}

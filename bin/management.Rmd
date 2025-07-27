@@ -1,0 +1,152 @@
+---
+title: "Descriptive Statistics for Clinical Biomarkers"
+author: "Jing"
+date: "`r Sys.Date()`"
+output: 
+    html_document:
+        code_folding: hide  
+        self_contained: TRUE
+editor_options:
+    chunk_output_type: console 
+params:
+    input: 'data/clinical.csv'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction  
+This clinical study is aimed at measuring the effect of a drug on the expression of a set of genes.
+
+# Objective
+Identify biomarkers of interest associated to the effect of the drug.  
+
+Loading data `r print(params$input)`...
+
+
+```{r load library, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(DT)
+
+```
+
+```{r load data, message = FALSE, warning = FALSE}
+clinical_data <- read_csv(params$input)
+```
+
+# Statistics  
+
+Number of unique subject having:  
+```{r treatment statistics, message = FALSE, warning = FALSE}
+clinical_data %>% 
+    select(USUBJID, TREATMENT) %>%
+    distinct() %>%
+    select(TREATMENT) %>%
+    table()
+
+```
+
+Number of unique subject belongs to: 
+
+```{r gender statistics, message = FALSE, warning = FALSE}
+clinical_data %>% 
+    select(USUBJID, GENDER) %>%
+    distinct() %>%
+    select(GENDER) %>%
+    table()
+```
+
+```{r gender and treatment statistics, message = FALSE, warning = FALSE}
+clinical_data %>% 
+    select(USUBJID, GENDER,TREATMENT) %>%
+    distinct() %>%
+    select(GENDER,TREATMENT) %>%
+    table()
+```
+
+Looking at TP53 at treatment start  
+```{r TP53 D0, message = FALSE, warning = FALSE}
+tp53_by_treatment_gender_D0 <- clinical_data %>% 
+    filter(VISIT=="D0") %>%
+    group_by(TREATMENT,GENDER) %>%
+    summarise(
+        n = n(),
+        mean = mean(MARKER_TP53, na.rm = TRUE),
+        median = median(MARKER_TP53, na.rm = TRUE),
+        sd = sd(MARKER_TP53, na.rm = TRUE),
+        .groups = "drop"
+    )
+print(knitr::kable(tp53_by_treatment_gender_D0,digits = 2))
+```
+
+Looking at TP53 at 24h after treatment   
+```{r TP53 D1, message = FALSE, warning = FALSE}
+tp53_by_treatment_gender_D1 <- clinical_data %>% 
+    filter(VISIT=="D1") %>%
+    group_by(TREATMENT,GENDER) %>%
+    summarise(
+        n = n(),
+        mean = mean(MARKER_TP53, na.rm = TRUE),
+        median = median(MARKER_TP53, na.rm = TRUE),
+        sd = sd(MARKER_TP53, na.rm = TRUE),
+        .groups = "drop"
+    )
+print(knitr::kable(tp53_by_treatment_gender_D1,digits = 2))
+```
+
+
+Looking at TP53 at 48h after treatment   
+```{r TP53 D2, message = FALSE, warning = FALSE}
+tp53_by_treatment_gender_D2 <- clinical_data %>% 
+    filter(VISIT=="D2") %>%
+    group_by(TREATMENT,GENDER) %>%
+    summarise(
+        n = n(),
+        mean = mean(MARKER_TP53, na.rm = TRUE),
+        median = median(MARKER_TP53, na.rm = TRUE),
+        sd = sd(MARKER_TP53, na.rm = TRUE),
+        .groups = "drop"
+    )
+print(knitr::kable(tp53_by_treatment_gender_D2,digits = 2))
+```
+
+# Missingness
+There are `r length(grep("^MARKER_", names(clinical_data), value = TRUE))` biomarkers in input file.  
+Biomarkers having missing values with respect to GENDER and TREATMENT   
+
+```{r missingness, message = FALSE, warning = FALSE}
+# Identify biomarker columns
+biomarker_cols <- grep("^MARKER_", names(clinical_data), value = TRUE)
+
+# Create a long-format version of the data
+missing_long <- clinical_data %>%
+  pivot_longer(cols = all_of(biomarker_cols), names_to = "BIOMARKER", values_to = "VALUE") %>%
+  filter(is.na(VALUE)) %>%
+  group_by(BIOMARKER, GENDER, TREATMENT) %>%
+  summarise(MISSING = n(), .groups = "drop")
+
+# Pivot wider for final display
+missing_summary <- missing_long %>%
+  pivot_wider(
+    names_from = c(GENDER, TREATMENT),
+    values_from = MISSING,
+    values_fill = 0
+  ) %>%
+  arrange(BIOMARKER)
+
+DT::datatable(missing_summary, 
+          caption = "Missing biomarker values grouped by GENDER and TREATMENT",
+          options = list(pageLength = 10, scrollX = TRUE))
+
+```
+
+Remove markers (`r paste0(missing_summary$BIOMARKER, collapse = ",")`) having missing values... 
+
+```{r remove markers having missingness, message = FALSE, warning = FALSE}
+clean_clinical <- clinical_data %>% select(-missing_summary$BIOMARKER)
+write.csv(clean_clinical, "clean_clinical.csv",row.names = FALSE)
+
+```
+
+There are `r length(grep("^MARKER_", names(clean_clinical), value = TRUE))` biomarkers for further analysis. 
