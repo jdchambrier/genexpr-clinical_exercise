@@ -1,0 +1,221 @@
+---
+title: "Clinical Biomarker Analysis"
+author: "Jing"
+date: "`r Sys.Date()`"
+output: 
+    html_document:
+        code_folding: hide  
+        self_contained: TRUE
+editor_options:
+    chunk_output_type: console 
+params:
+    gender: 'MALE'
+    input: 'test_data/simulated_clinical_gene_expression.csv'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+```{r load library, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(DT)
+```
+```{r load data, message = FALSE, warning = FALSE}
+# Load the data
+data <- read.csv(params$input)
+```
+
+```{r remove negative markers, message = FALSE, warning = FALSE}
+check_remove_negative <- function(data){
+    marker_cols <- grep("MARKER_", names(data), value = TRUE)
+    if(length(marker_cols) == 0){
+        cat("No MARKER_ columns found\n")
+        return(data)
+    }
+    # find what columns have negative values
+    negative_cols <- marker_cols[sapply(marker_cols, function(col) {
+        any(data[[col]] < 0, na.rm = TRUE)
+    })]
+    if(length(negative_cols) > 0){
+        cat("Found", length(negative_cols), "MARKER_ columns with negative values:\n")
+        cat(paste(negative_cols, collapse = ", "), "\n")
+        cat("Removing these columns...\n")
+        return(data %>% select(-all_of(negative_cols)))
+    } else {
+        cat("All MARKER_ columns contain only non-negative values\n")
+        return(data)
+    }
+}
+
+filtered_data <- check_remove_negative(data)
+```
+
+```{r Compute Fold Changes from Baseline, message = FALSE, warning = FALSE}
+fold_change_data <- filtered_data %>% 
+    filter(GENDER == params$gender) %>%
+    pivot_longer(
+        cols = starts_with("MARKER_"),
+        names_to = "BIOMARKER",
+        values_to = "EXPRESSION",
+        names_prefix = "MARKER_"
+    ) %>%
+    group_by(USUBJID, BIOMARKER) %>%
+    mutate(
+        baseline_expression = EXPRESSION[VISIT == "D0"],
+        fold_change = EXPRESSION / baseline_expression,
+        log2_fold_change = log2(fold_change)
+    ) %>%
+    ungroup() %>%
+    filter(VISIT == "D2")
+```
+
+```{r Statistical Testing, message = FALSE, warning = FALSE}
+cat("Analysing D2 DRUG vs PLACEBO...\n")
+
+significance_results <- data.frame()
+biomarkers <- unique(fold_change_data$BIOMARKER)
+
+for(biomarker in biomarkers) {
+    drug_data <- fold_change_data %>%
+        filter(BIOMARKER == biomarker, TREATMENT == "DRUG")
+    placebo_data <- fold_change_data %>%
+        filter(BIOMARKER == biomarker, TREATMENT == "PLACEBO")
+    
+    drug_sd <- sd(drug_data$log2_fold_change)
+    placebo_sd <- sd(placebo_data$log2_fold_change)
+
+    # Handle cases with zero SD in one or both groups
+    if (is.na(drug_sd) || is.na(placebo_sd)){
+        p_value <- NA
+    } else {
+        if (drug_sd == 0 || placebo_sd == 0) {
+            p_value <- NA  # both are constant; no variation
+        } else {
+            comparison_test <- t.test(drug_data$log2_fold_change, placebo_data$log2_fold_change)
+            p_value <- comparison_test$p.value
+        }
+    }
+    
+
+    result_row <- data.frame(
+        BIOMARKER = biomarker,
+        drug_mean_log2fc = mean(drug_data$log2_fold_change),
+        drug_vs_placebo_pval = p_value
+    )
+    
+    significance_results <- rbind(significance_results, result_row)
+}
+```
+
+```{r Adjust p-values and Determine Regulation, message = FALSE, warning = FALSE}
+significance_results$adj_pval <- p.adjust(significance_results$drug_vs_placebo_pval, method = "fdr")
+
+significance_results <- significance_results %>%
+    mutate(
+        regulation = case_when(
+            is.na(adj_pval) ~ "Not Significant",
+            adj_pval < 0.01 & drug_mean_log2fc > 0 ~ "Upregulated",
+            adj_pval < 0.01 & drug_mean_log2fc < 0 ~ "Downregulated",
+            TRUE ~ "Not Significant"
+        )
+    )
+
+write.csv(significance_results, "significance_results.csv",row.names = FALSE)
+
+DT::datatable(significance_results, 
+          caption = htmltools::tags$caption(
+            style = "caption-side: top; text-align: left;",
+            htmltools::HTML("Differential Expression Results of Biomarkers Between DRUG and PLACEBO Groups at D2.<br>   
+            NA indicates zero SD in one or both groups.  <br>        
+            Upregulated genes have FDR adj pval < 0.01 & DRUG mean log2fc > 0.<br>     
+            Downregulated genes have FDR adj pval < 0.01 & DRUG mean log2fc < 0. 
+            ")),
+          options = list(pageLength = 10, scrollX = TRUE))
+```
+
+```{r volcano-plot,  fig.width=8, fig.height=6}
+if(significance_results %>% 
+    distinct(regulation) %>%
+    pull() %>%
+    `==`("Not Significant") %>%
+    all()) {
+    cat("\nNo significant results for volcano plot!")
+} else {
+    # Compute max y-axis value (+0.5)
+    max_y <- max(-log10(significance_results$adj_pval), na.rm = TRUE) + 0.5
+
+    volcano_plot <- significance_results %>%
+    ggplot(aes(x = drug_mean_log2fc, y = -log10(adj_pval), color = regulation)) +
+    geom_point(alpha = 0.8, size = 3) +
+    # Only center vertical dashed line at log2FC = 0
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey40") +
+    # Horizontal p-value threshold line
+    geom_hline(yintercept = -log10(0.01), linetype = "dashed", color = "grey40") +
+    # Custom y-axis limits
+    scale_y_continuous(limits = c(-0.5, max_y)) +
+    scale_color_manual(values = c(
+        "Upregulated" = "firebrick",
+        "Downregulated" = "dodgerblue",
+        "Not Significant" = "gray70"
+    )) +
+    labs(
+        title = "Volcano Plot: Drug vs Placebo at D2",
+        x = "Mean log2 Fold Change (DRUG)",
+        y = "-log10 Adjusted p-value",
+        color = "Regulation",
+        caption = "Dashed lines: log2FC = 0 and adj p < 0.01"
+    ) +
+    theme_minimal(base_size = 14)
+
+    volcano_plot
+}
+
+```
+
+
+```{r plot significant biomarkers, fig.width=8, fig.height=6}
+# Get significant biomarkers
+significant_biomarkers <- significance_results %>%
+  filter(regulation %in% c("Upregulated", "Downregulated")) %>%
+  pull(BIOMARKER)
+
+if(length(significant_biomarkers)>0){
+    # Rename columns that start with "MARKER_"
+    colnames(filtered_data) <- sub("^MARKER_", "", colnames(filtered_data))
+
+    # Ensure the biomarker columns exist in the data
+    valid_biomarkers <- intersect(significant_biomarkers, colnames(filtered_data))
+
+    # Select required columns
+    result <- filtered_data %>%
+    select(USUBJID, TREATMENT, VISIT, GENDER, all_of(valid_biomarkers))
+
+
+
+    # Reshape the result to long format for plotting
+    result_long <- result %>%
+    pivot_longer(
+        cols = all_of(valid_biomarkers),
+        names_to = "BIOMARKER",
+        values_to = "EXPRESSION"
+    )
+
+    # Plot distributions across timepoints
+    ggplot(result_long, aes(x = VISIT, y = EXPRESSION, fill = VISIT)) +
+    geom_boxplot(alpha = 0.7, outlier.shape = NA) +
+    geom_jitter(width = 0.2, alpha = 0.4, color = "gray30") +
+    facet_wrap(~ BIOMARKER, scales = "free_y") +
+    theme_minimal() +
+    labs(
+        title = "Distribution of sinificant differentially expreesed genes across timepoints",
+        y = "Expression Level",
+        x = "Visit (Timepoint)"
+    ) +
+    theme(legend.position = "none")
+} else {
+    cat("\nNo significant results for extression distribution plot!")
+}
+
+```

@@ -21,10 +21,10 @@ WorkflowClinical_exercise.initialise(params, log)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
-ch_multiqc_custom_config   = params.multiqc_config ? Channel.fromPath( params.multiqc_config, checkIfExists: true ) : Channel.empty()
-ch_multiqc_logo            = params.multiqc_logo   ? Channel.fromPath( params.multiqc_logo, checkIfExists: true ) : Channel.empty()
-ch_multiqc_custom_methods_description = params.multiqc_methods_description ? file(params.multiqc_methods_description, checkIfExists: true) : file("$projectDir/assets/methods_description_template.yml", checkIfExists: true)
+ch_multiqc_config          = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: false)
+ch_multiqc_custom_config   = params.multiqc_config ? Channel.fromPath( params.multiqc_config, checkIfExists: false ) : Channel.empty()
+ch_multiqc_logo            = params.multiqc_logo   ? Channel.fromPath( params.multiqc_logo, checkIfExists: false ) : Channel.empty()
+ch_multiqc_custom_methods_description = params.multiqc_methods_description ? file(params.multiqc_methods_description, checkIfExists: false) : file("$projectDir/assets/methods_description_template.yml", checkIfExists: false)
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -38,7 +38,7 @@ ch_multiqc_custom_methods_description = params.multiqc_methods_description ? fil
 // include { INPUT_CHECK } from '../subworkflows/local/input_check'
 
 include { DATA_MANAGEMENT                      } from '../modules/local/data_management'
-
+include { DE_ANALYSIS                          } from '../modules/local/de_analysis'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -69,11 +69,19 @@ workflow CLINICALEXERCISE {
     )
     ch_versions = ch_versions.mix(DATA_MANAGEMENT.out.versions)
 
+    DE_ANALYSIS (
+        DATA_MANAGEMENT.out.clean_data,
+        params.gender,
+        file(params.dermd)
+    )
+    ch_versions = ch_versions.mix(DE_ANALYSIS.out.versions)
 
     emit:
 
-        clean_data          = DATA_MANAGEMENT.out.clean_data
-        versions_clean      = DATA_MANAGEMENT.out.versions     
+        clean_data              = DATA_MANAGEMENT.out.clean_data
+        versions_clean          = DATA_MANAGEMENT.out.versions     
+        significance_results    = DE_ANALYSIS.out.significance_results
+        versions_significance   = DE_ANALYSIS.out.versions
 
 }
 

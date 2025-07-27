@@ -11,6 +11,10 @@ nextflow_workflow {
                 
                 input = "${projectDir}/test_data/test_data.csv"
                 managementrmd = "${projectDir}/bin/management.Rmd"
+                dermd   = "${projectDir}/bin/de_analysis.Rmd"
+
+                gender  = 'MALE'
+
             }
         }
 
@@ -21,6 +25,9 @@ nextflow_workflow {
                 //  nf-test for data management
                 assert clean_data.size() == 1
                 assert snapshot(clean_data).match("clean_data")
+                // nf-test for biomarker analysis
+                assert significance_results.size() == 1
+                assert snapshot(significance_results).match("significance_results")
             }
         }
 
