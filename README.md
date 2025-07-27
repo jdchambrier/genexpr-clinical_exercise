@@ -10,7 +10,8 @@
 
 **genexpr/clinical_exercise** is a bioinformatics pipeline that identify biomarkers of interest associated to the effect of the drug
 
-!!! add flowchart here
+file:///home/jdchambrier/Downloads/test.drawio.png
+
 
 1. Data management:  
    involves loading the dataset, generating descriptive statistics, checking and removing rows with missing biomarker values, and preparing a clean analysis-ready dataset for variables such as TREATMENT, GENDER, and MARKER_TP53.
