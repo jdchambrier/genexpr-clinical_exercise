@@ -69,6 +69,9 @@ nextflow run main.nf \
    --outdir <OUTDIR>  # e.g output
 ```
 
+5. Find outputs in ```--outdir``` indicated folder     
+-- ```data_management``` subfolder for clean data after removing biomarkers containing missing values and a html report with descriptive statistics for TREATMENT, GENDER and MARKER_TP53
+ 
 
 
 
