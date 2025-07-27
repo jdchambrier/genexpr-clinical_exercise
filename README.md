@@ -91,7 +91,7 @@ nextflow run main.nf \
 
 ## For developers     
 
-To make sure individual process and pipeline is working as expected (store test_data.csv and clean_clinical.csv in test_data foler first):    
+To make sure individual process and pipeline is working as expected (store [test_data.csv](https://github.com/user-attachments/files/21452788/test_data.csv) and [clean_clinical.csv](https://github.com/user-attachments/files/21455219/clean_clinical.csv) in test_data foler first):    
 #### -- run data_management process unit test
 ```bash
 nf-test test tests/modules/local/data_management.nf.test   --profile docker
