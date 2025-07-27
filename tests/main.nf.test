@@ -1,0 +1,22 @@
+nextflow_pipeline {
+
+    name "Test Workflow main.nf"
+    script "main.nf"
+
+    test("Should run without failures") {
+
+        when {
+            params {
+
+                input = "${projectDir}/test_data/test_data.csv"
+                managementrmd = "${projectDir}/bin/management.Rmd"
+            }
+        }
+
+        then {
+            assert workflow.success
+        }
+
+    }
+
+}
