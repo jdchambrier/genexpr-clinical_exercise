@@ -15,7 +15,7 @@
 1. Data management:  
    involves loading the dataset, generating descriptive statistics, checking and removing rows with missing biomarker values, and preparing a clean analysis-ready dataset for variables such as TREATMENT, GENDER, and MARKER_TP53.
 2. Biomarker expression analysis:    
-   identifies biomarkers significantly affected by the drug by comparing expression levels at the D2 timepoint between treatment groups and visualizes the timecourse of significant markers.
+   identifies significantly regulated biomarkers at 48 hours (D2) and visualizes the timecourse of significant markers. To identify significantly regulated biomarkers, the log₂ fold change (log2FC) in expression (D2/D0) was calculated. A positive mean log2FC in the drug group indicates upregulation; a negative value indicates downregulation. Biomarkers with significantly different log2FC distributions between drug and placebo (FDR-adjusted p < 0.01) were considered treatment-responsive.
 
 ## Usage
 
